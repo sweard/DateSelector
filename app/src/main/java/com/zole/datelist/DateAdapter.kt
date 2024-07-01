@@ -1,6 +1,5 @@
 package com.zole.datelist
 
-import android.annotation.SuppressLint
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.widget.TextView
@@ -11,10 +10,10 @@ class DateAdapter :
     ListAdapter<DateItem, DateViewHolder>(ItemDiffCallback()) {
     private var layoutInflater: LayoutInflater? = null
 
-    private val selectedDays = HashSet<DateItem>()
+    private val selectedIndex = ArrayList<Int>()
 
     fun getSelectedItems(): List<DateItem> {
-        return currentList.filter { it.selected }.sortedBy { it.utcTime }
+        return currentList.filter { it.selected }
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): DateViewHolder {
@@ -47,6 +46,7 @@ class DateAdapter :
         val content = itemView.findViewById<TextView>(R.id.content)
         content.text = item.formatValue
         content.isSelected = item.selected
+                && item.formatValue.isNotBlank()
         if (item.type == DateItem.TYPE_DAY) {
             itemView.setOnClickListener {
                 handleSelected(position)
@@ -58,36 +58,40 @@ class DateAdapter :
         return getItem(position).type
     }
 
-    @SuppressLint("NotifyDataSetChanged")
     private fun handleSelected(position: Int) {
         val item = getItem(position)
-        val selectedCount = currentList.count { it.selected }
-        if (selectedCount > 1) {
-            currentList.forEach { it.selected = false }
-            selectedDays.clear()
-            item.selected = true
-            notifyDataSetChanged()
-        } else {
-            item.selected = !item.selected
+        // 计算当前选中的天数
+        if (selectedIndex.size > 1) {
+            // 选中的是一段时间，清除之前的选中项目
+            notifySelectedState(false)
+            selectedIndex.clear()
         }
+
+        item.selected = !item.selected
+        // 暂存当前选中的项目
         if (item.selected) {
-            selectedDays.add(item)
+            selectedIndex.add(position)
         } else {
-            selectedDays.remove(item)
+            selectedIndex.remove(position)
         }
-        if (selectedDays.size >=2 ) {
-            val first = selectedDays.minBy { it.utcTime }
-            val last = selectedDays.maxBy { it.utcTime }
-            val firstIndex = currentList.indexOf(first)
-            val lastIndex = currentList.indexOf(last)
-            currentList.forEachIndexed { index, dateItem ->
-                dateItem.selected = index in firstIndex..lastIndex
-            }
-            notifyItemRangeChanged(firstIndex, lastIndex-firstIndex + 1)
+        if (selectedIndex.size > 1) {
+            // 选中的是一段时间
+            notifySelectedState(true)
         } else {
             notifyItemChanged(position)
         }
     }
+
+    private fun notifySelectedState(selected: Boolean) {
+        val firstIndex = selectedIndex.min()
+        val lastIndex = selectedIndex.max()
+        // 将选中的项目之间的项目全部选中或反选
+        for (index in firstIndex .. lastIndex) {
+            currentList[index].selected = selected
+        }
+        notifyItemRangeChanged(firstIndex, lastIndex - firstIndex + 1)
+    }
+
 }
 
 class ItemDiffCallback : DiffUtil.ItemCallback<DateItem>() {

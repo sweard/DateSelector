@@ -46,7 +46,7 @@ class MainActivity : AppCompatActivity() {
         curDate.set(Calendar.HOUR_OF_DAY, 0)
         val todayMillis = curDate.timeInMillis
         val dayRange = 24 * 60 * 60 * 1000L
-        for (i in 0..60) {
+        for (i in 0..90) {
             val targetMillis = todayMillis + (i * dayRange)
             curDate.timeInMillis = targetMillis
             val year = curDate.get(Calendar.YEAR)
@@ -81,10 +81,12 @@ class MainActivity : AppCompatActivity() {
         // 1-7 sunday - saturday
         val count = dayOfWeek - 1
         val dateList = ArrayList<DateItem>()
+        // 添加周日到周六
         for (i in 0 until 7) {
             val item = DateItem(0, 0, 0, 0, getWeekName(i + 1), type = DateItem.TYPE_WEEK, selected = false)
             dateList.add(item)
         }
+        // 补全空白处
         for (i in 0 until count) {
             val item =
                 DateItem(0, 0, 0, 0, formatValue = "", type = DateItem.TYPE_DAY, selected = false)
